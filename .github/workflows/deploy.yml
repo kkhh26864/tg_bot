@@ -1,0 +1,28 @@
+name: Deploy Telegram Bot
+
+on:
+  push:
+    branches:
+      - main  # 或者你的主分支名称
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'  # 或者你想使用的Node.js版本
+    - run: npm ci
+    - name: Deploy to Server
+      env:
+        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+        SERVER_USER: ${{ secrets.SERVER_USER }}
+      run: |
+        echo "$DEPLOY_KEY" > deploy_key
+        chmod 600 deploy_key
+        scp -i deploy_key -o StrictHostKeyChecking=no -r ./* $SERVER_USER@$SERVER_IP:/path/to/your/bot/directory
+        ssh -i deploy_key -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "cd /path/to/your/bot/directory && npm install && pm2 restart bot || pm2 start bot.js --name bot"
